@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Flashcards App</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3"></script>
+  <!-- jsPDF + html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Flashcard Builder</h1>
+
+    <div class="editor">
+      <div v-for="(card, i) in cards" :key="i" class="card-editor">
+        <input v-model="card.frontText" placeholder="Front text">
+        <input v-model="card.backText" placeholder="Back text">
+        <input type="file" @change="e => onImageUpload(e, i)">
+        <button @click="removeCard(i)">Remove</button>
+      </div>
+      <button @click="addCard">➕ Add Card</button>
+      <button @click="generatePDF">📥 Download PDF</button>
+    </div>
+
+    <h3>Preview (up to 8 cards)</h3>
+    <div class="grid">
+      <div v-for="(card, i) in cards.slice(0,8)" :key="'p'+i" class="card">
+        <p>{{ card.frontText }}</p>
+        <img v-if="card.imageUrl" :src="card.imageUrl">
+        <small>{{ card.backText }}</small>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
