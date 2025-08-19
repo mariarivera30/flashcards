@@ -6,8 +6,9 @@
   <link rel="stylesheet" href="style.css">
   <!-- Vue 3 -->
   <script src="https://unpkg.com/vue@3"></script>
-  <!-- jsPDF + html2canvas -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf"></script>
+  <!-- jsPDF UMD build for browser. Using a specific version ensures a compatible global API. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- html2canvas is included for potential future use but not required for basic PDF generation -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas"></script>
 </head>
 <body>

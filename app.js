@@ -18,6 +18,11 @@ createApp({
     }
 
     async function generatePDF() {
+      // Extract jsPDF constructor from the UMD bundle loaded on the page. Without
+      // this the `jsPDF` global may be undefined when using the CDN. See
+      // https://www.geeksforgeeks.org/html/how-to-generate-pdf-file-using-jspdf-library/
+      // for example usage【131935815880844†L169-L178】.
+      const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
       for (let i = 0; i < cards.value.length; i++) {
         if (i > 0) pdf.addPage();
