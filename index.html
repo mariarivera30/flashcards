@@ -1,41 +1,71 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Flashcards App</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Vue 3 -->
-  <script src="https://unpkg.com/vue@3"></script>
-  <!-- jsPDF UMD build for browser. Using a specific version ensures a compatible global API. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- html2canvas is included for potential future use but not required for basic PDF generation -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcard Builder</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
 <body>
-  <div id="app">
+  <main class="container">
     <h1>Flashcard Builder</h1>
 
-    <div class="editor">
-      <div v-for="(card, i) in cards" :key="i" class="card-editor">
-        <input v-model="card.frontText" placeholder="Front text">
-        <input v-model="card.backText" placeholder="Back text">
-        <input type="file" @change="e => onImageUpload(e, i)">
-        <button @click="removeCard(i)">Remove</button>
+    <section class="controls">
+      <div class="control-row">
+        <button id="addCardBtn" type="button">+ Add Card</button>
+        <button id="downloadBtn" type="button">Download PDF (Front & Back)</button>
       </div>
-      <button @click="addCard">➕ Add Card</button>
-      <button @click="generatePDF">📥 Download PDF</button>
-    </div>
 
-    <h3>Preview (up to 8 cards)</h3>
-    <div class="grid">
-      <div v-for="(card, i) in cards.slice(0,8)" :key="'p'+i" class="card">
-        <p>{{ card.frontText }}</p>
-        <img v-if="card.imageUrl" :src="card.imageUrl">
-        <small>{{ card.backText }}</small>
+      <div class="grid-options">
+        <label>Rows
+          <input id="rowsInput" type="number" min="1" max="5" value="4">
+        </label>
+        <label>Cols
+          <input id="colsInput" type="number" min="1" max="4" value="2">
+        </label>
+        <label>Card W (pt)
+          <input id="cardWInput" type="number" min="100" max="350" value="252">
+        </label>
+        <label>Card H (pt)
+          <input id="cardHInput" type="number" min="80" max="400" value="144">
+        </label>
+        <label>Gutter (pt)
+          <input id="gutterInput" type="number" min="0" max="60" value="18">
+        </label>
+        <label>Margin (pt)
+          <input id="marginInput" type="number" min="0" max="72" value="36">
+        </label>
+        <label>Duplex flip
+          <select id="flipSelect">
+            <option value="long" selected>Long edge (mirror columns)</option>
+            <option value="short">Short edge (mirror rows)</option>
+          </select>
+        </label>
+        <label>Font size
+          <input id="fontSizeInput" type="number" min="8" max="36" value="14">
+        </label>
+        <label>Show borders
+          <input id="showBorders" type="checkbox" checked>
+        </label>
+      </div>
+    </section>
+
+    <section id="cardList"></section>
+
+    <h3>Preview (up to grid size)</h3>
+    <div class="preview-wrap">
+      <div>
+        <h4>Front</h4>
+        <div id="previewFront" class="preview"></div>
+      </div>
+      <div>
+        <h4>Back</h4>
+        <div id="previewBack" class="preview"></div>
       </div>
     </div>
-  </div>
-
-  <script src="app.js"></script>
+  </main>
 </body>
 </html>
