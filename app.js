@@ -1,17 +1,12 @@
-// Flashcards app logic with proper PDF grid layout (front and back)
+// Flashcards app: front/back PDF, true text centering, image position control.
 const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-let cards = [
-  { front: "test", back: "1", image: null },
-];
+let cards = [{ front: "Front text", back: "Back text", image: null }];
 
-function newCard() {
-  return { front: "", back: "", image: null };
-}
+function newCard() { return { front: "", back: "", image: null }; }
 
 function renderCardList() {
-  const list = $("#cardList");
+  const list = document.querySelector("#cardList");
   list.innerHTML = "";
   cards.forEach((c, idx) => {
     const row = document.createElement("div");
@@ -23,7 +18,6 @@ function renderCardList() {
       <button type="button">Remove</button>
     `;
     const [frontInput, backInput, fileInput, removeBtn] = row.children;
-
     frontInput.addEventListener("input", e => { c.front = e.target.value; renderPreview(); });
     backInput.addEventListener("input", e => { c.back = e.target.value; renderPreview(); });
     fileInput.addEventListener("change", e => {
@@ -34,117 +28,80 @@ function renderCardList() {
       reader.readAsDataURL(f);
     });
     removeBtn.addEventListener("click", () => { cards.splice(idx, 1); renderCardList(); renderPreview(); });
-
     list.appendChild(row);
   });
 }
 
 function gridDims() {
-  const rows = parseInt($("#rowsInput").value, 10);
-  const cols = parseInt($("#colsInput").value, 10);
-  const cardW = parseFloat($("#cardWInput").value);
-  const cardH = parseFloat($("#cardHInput").value);
-  const gutter = parseFloat($("#gutterInput").value);
-  const margin = parseFloat($("#marginInput").value);
-  const fontSize = parseFloat($("#fontSizeInput").value);
-  const flip = $("#flipSelect").value;
-  const showBorders = $("#showBorders").checked;
-  return { rows, cols, cardW, cardH, gutter, margin, fontSize, flip, showBorders };
+  const rows = parseInt(document.querySelector("#rowsInput").value, 10);
+  const cols = parseInt(document.querySelector("#colsInput").value, 10);
+  const cardW = parseFloat(document.querySelector("#cardWInput").value);
+  const cardH = parseFloat(document.querySelector("#cardHInput").value);
+  const gutter = parseFloat(document.querySelector("#gutterInput").value);
+  const margin = parseFloat(document.querySelector("#marginInput").value);
+  const fontSize = parseFloat(document.querySelector("#fontSizeInput").value);
+  const flip = document.querySelector("#flipSelect").value;
+  const showBorders = document.querySelector("#showBorders").checked;
+  const imagePosition = document.querySelector("#imagePosition").value;
+  return { rows, cols, cardW, cardH, gutter, margin, fontSize, flip, showBorders, imagePosition };
 }
 
-function renderPreview() {
-  const { rows, cols } = gridDims();
-  const front = $("#previewFront");
-  const back  = $("#previewBack");
-
-  front.innerHTML = "";
-  back.innerHTML  = "";
-
-  const count = Math.min(cards.length, rows * cols);
-
-  const frontGrid = document.createElement("div");
-  frontGrid.className = "preview-grid";
-  frontGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
-  const backGrid = document.createElement("div");
-  backGrid.className = "preview-grid";
-  backGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
-  // preview uses simple mapping
-  for (let i = 0; i < count; i++) {
-    const card = cards[i];
-    const pf = document.createElement("div");
-    pf.className = "preview-card";
-    pf.textContent = card.front || "";
-    if (card.image) {
-      const img = new Image();
-      img.src = card.image;
-      pf.prepend(img);
-    }
-    frontGrid.appendChild(pf);
-  }
-
-  // back preview uses flip mapping
-  const { flip } = gridDims();
-  for (let i = 0; i < count; i++) {
-    const { row, col } = indexToRowCol(i, cols);
-    const mapped = mapBackPosition(row, col, rows, cols, flip);
-    const targetIndex = mapped.row * cols + mapped.col;
-    // we will fill into the correct cell index
-  }
-  // create empty cells then fill
-  for (let i = 0; i < rows * cols; i++) {
-    const pb = document.createElement("div");
-    pb.className = "preview-card";
-    backGrid.appendChild(pb);
-  }
-  for (let i = 0; i < Math.min(cards.length, rows * cols); i++) {
-    const { row, col } = indexToRowCol(i, cols);
-    const mapped = mapBackPosition(row, col, rows, cols, flip);
-    const targetIndex = mapped.row * cols + mapped.col;
-    const cell = backGrid.children[targetIndex];
-    const card = cards[i];
-    cell.textContent = card.back || "";
-    if (card.image) {
-      // show image on front only by default
-    }
-  }
-
-  front.appendChild(frontGrid);
-  back.appendChild(backGrid);
-}
-
-function indexToRowCol(index, cols) {
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  return { row, col };
-}
-
-// For duplex alignment
+function indexToRowCol(index, cols) { return { row: Math.floor(index / cols), col: index % cols }; }
 function mapBackPosition(row, col, rows, cols, flip) {
-  if (flip === "long") {
-    return { row, col: cols - 1 - col };
+  if (flip === "long") return { row, col: cols - 1 - col };
+  return { row: rows - 1 - row, col };
+}
+
+// Drawing helpers
+function drawCenteredTextBlock(pdf, text, x, y, cardW, cardH, fontSize) {
+  const lines = pdf.splitTextToSize(text || "", cardW - 16);
+  const lineGap = 2;
+  const textHeight = lines.length * (fontSize + lineGap);
+  const yStart = y + (cardH - textHeight) / 2 + fontSize;
+  lines.forEach((line, i) => {
+    const w = pdf.getTextDimensions(line || "").w || 0;
+    const xLine = x + (cardW - w) / 2;
+    const yLine = yStart + i * (fontSize + lineGap);
+    pdf.text(line, xLine, yLine);
+  });
+}
+
+function drawCardFront(pdf, card, x, y, cardW, cardH, fontSize, showBorders, imagePosition) {
+  if (showBorders) pdf.rect(x, y, cardW, cardH);
+
+  if (imagePosition === "top" && card.image) {
+    const imgH = cardH * 0.25;
+    const imgW = cardW * 0.8;
+    const ix = x + (cardW - imgW) / 2;
+    const iy = y + 10;
+    pdf.addImage(card.image, "PNG", ix, iy, imgW, imgH, undefined, "FAST");
+    drawCenteredTextBlock(pdf, card.front || "", x, iy + imgH + 10, cardW, cardH - imgH - 20, fontSize);
+  } else if (imagePosition === "bottom" && card.image) {
+    drawCenteredTextBlock(pdf, card.front || "", x, y, cardW, cardH - cardH * 0.25, fontSize);
+    const imgH = cardH * 0.25;
+    const imgW = cardW * 0.8;
+    const ix = x + (cardW - imgW) / 2;
+    const iy = y + cardH - imgH - 10;
+    pdf.addImage(card.image, "PNG", ix, iy, imgW, imgH, undefined, "FAST");
   } else {
-    return { row: rows - 1 - row, col };
+    drawCenteredTextBlock(pdf, card.front || "", x, y, cardW, cardH, fontSize);
   }
 }
 
-// PDF generation
+function drawCardBack(pdf, card, x, y, cardW, cardH, fontSize, showBorders) {
+  if (showBorders) pdf.rect(x, y, cardW, cardH);
+  drawCenteredTextBlock(pdf, card.back || "", x, y, cardW, cardH, fontSize);
+}
+
+// PDF Generation
 async function generatePDF() {
   const { jsPDF } = window.jspdf;
-  const {
-    rows, cols, cardW, cardH, gutter, margin,
-    fontSize, flip, showBorders
-  } = gridDims();
-
+  const { rows, cols, cardW, cardH, gutter, margin, fontSize, flip, showBorders, imagePosition } = gridDims();
   const pdf = new jsPDF({ unit: "pt", format: "letter", orientation: "landscape" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-
   const perPage = rows * cols;
   const pagePairs = Math.ceil(cards.length / perPage);
-
   let cardIndex = 0;
+
   for (let p = 0; p < pagePairs; p++) {
     // FRONT
     pdf.setFontSize(fontSize);
@@ -153,36 +110,12 @@ async function generatePDF() {
         if (cardIndex >= cards.length) break;
         const x = margin + c * (cardW + gutter);
         const y = margin + r * (cardH + gutter);
-        const card = cards[cardIndex];
-
-        if (showBorders) pdf.rect(x, y, cardW, cardH);
-
-        // image (front only)
-        if (card.image) {
-          try {
-            const imgW = cardW * 0.9;
-            const imgH = cardH * 0.5;
-            const ix = x + (cardW - imgW) / 2;
-            const iy = y + 10;
-            pdf.addImage(card.image, "PNG", ix, iy, imgW, imgH, undefined, "FAST");
-            pdf.text((card.front || ""), x + 8, y + cardH - 20, { maxWidth: cardW - 16, align: "left" });
-          } catch (e) {
-            pdf.text((card.front || ""), x + 8, y + 22, { maxWidth: cardW - 16, align: "left" });
-          }
-        } else {
-          // center text block
-          const text = (card.front || "");
-          const lines = pdf.splitTextToSize(text, cardW - 16);
-          const textHeight = lines.length * (fontSize + 2);
-          const tx = x + 8;
-          const ty = y + (cardH - textHeight) / 2 + fontSize;
-          pdf.text(lines, tx, ty);
-        }
+        drawCardFront(pdf, cards[cardIndex], x, y, cardW, cardH, fontSize, showBorders, imagePosition);
         cardIndex++;
       }
     }
 
-    // BACK (same page count as front)
+    // BACK
     pdf.addPage({ format: "letter", orientation: "landscape" });
     pdf.setFontSize(fontSize);
     const startForBack = p * perPage;
@@ -191,18 +124,9 @@ async function generatePDF() {
       const local = i - startForBack;
       const { row, col } = indexToRowCol(local, cols);
       const mapped = mapBackPosition(row, col, rows, cols, flip);
-
       const x = margin + mapped.col * (cardW + gutter);
       const y = margin + mapped.row * (cardH + gutter);
-
-      if (showBorders) pdf.rect(x, y, cardW, cardH);
-
-      const text = (cards[i].back || "");
-      const lines = pdf.splitTextToSize(text, cardW - 16);
-      const textHeight = lines.length * (fontSize + 2);
-      const tx = x + 8;
-      const ty = y + (cardH - textHeight) / 2 + fontSize;
-      pdf.text(lines, tx, ty);
+      drawCardBack(pdf, cards[i], x, y, cardW, cardH, fontSize, showBorders);
     }
 
     if (p < pagePairs - 1) pdf.addPage({ format: "letter", orientation: "landscape" });
@@ -211,19 +135,60 @@ async function generatePDF() {
   pdf.save("flashcards.pdf");
 }
 
-// UI init
-$("#addCardBtn").addEventListener("click", () => {
-  cards.push(newCard());
-  renderCardList();
-  renderPreview();
+// Preview (simple)
+function renderPreview() {
+  const { rows, cols } = gridDims();
+  const front = document.querySelector("#previewFront");
+  const back = document.querySelector("#previewBack");
+  front.innerHTML = "";
+  back.innerHTML = "";
+  const count = Math.min(cards.length, rows * cols);
+
+  const mkGrid = () => {
+    const g = document.createElement("div");
+    g.className = "preview-grid";
+    g.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    for (let i=0;i<rows*cols;i++) {
+      const d = document.createElement("div");
+      d.className = "preview-card";
+      g.appendChild(d);
+    }
+    return g;
+  };
+  const frontGrid = mkGrid();
+  const backGrid  = mkGrid();
+
+  // fill front
+  for (let i = 0; i < count; i++) {
+    const d = frontGrid.children[i];
+    const card = cards[i];
+    if (card.image) {
+      const img = new Image();
+      img.src = card.image;
+      d.appendChild(img);
+    }
+    d.appendChild(document.createTextNode(card.front || ""));
+  }
+
+  // fill back (mirroring is only for PDF; preview is illustrative)
+  for (let i = 0; i < count; i++) {
+    backGrid.children[i].appendChild(document.createTextNode(cards[i].back || ""));
+  }
+
+  front.appendChild(frontGrid);
+  back.appendChild(backGrid);
+}
+
+// UI
+document.querySelector("#addCardBtn").addEventListener("click", () => {
+  cards.push(newCard()); renderCardList(); renderPreview();
 });
-
-$("#downloadBtn").addEventListener("click", generatePDF);
-
-["rowsInput","colsInput","cardWInput","cardHInput","gutterInput","marginInput","fontSizeInput","flipSelect","showBorders"]
+document.querySelector("#downloadBtn").addEventListener("click", generatePDF);
+["rowsInput","colsInput","cardWInput","cardHInput","gutterInput","marginInput","fontSizeInput","flipSelect","showBorders","imagePosition"]
   .forEach(id => {
-    $( "#" + id ).addEventListener("input", renderPreview);
-    $( "#" + id ).addEventListener("change", renderPreview);
+    const el = document.querySelector("#" + id);
+    el.addEventListener("input", renderPreview);
+    el.addEventListener("change", renderPreview);
   });
 
 renderCardList();

@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Flashcard Builder</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- jsPDF CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -42,6 +41,13 @@
           <select id="flipSelect">
             <option value="long" selected>Long edge (mirror columns)</option>
             <option value="short">Short edge (mirror rows)</option>
+          </select>
+        </label>
+        <label>Image position
+          <select id="imagePosition">
+            <option value="bottom" selected>Bottom (below text)</option>
+            <option value="top">Top (above text)</option>
+            <option value="hidden">Hidden</option>
           </select>
         </label>
         <label>Font size
